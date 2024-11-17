@@ -1,0 +1,78 @@
+# Python кэш-файлы
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Файлы расширений C
+*.so
+
+# Каталоги сборки / упаковки
+build/
+dist/
+*.egg-info/
+.eggs/
+parts/
+wheels/
+sdist/
+develop-eggs/
+downloads/
+eggs/
+lib/
+lib64/
+pip-wheel-metadata/
+share/python-wheels/
+
+# Логи установщика
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit тесты / отчеты покрытия
+htmlcov/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+.pytest_cache/
+
+# Virtualenv
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+.virtualenv/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# Файлы конфигурации среды
+.env
+.env.*
+
+# IDE / редакторы
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+
+# Системные файлы macOS
+.DS_Store
+
+# Логи и временные файлы
+*.log
+*.temp
+
+# Конфигурационные файлы
+!config.yaml
+
+# Файлы профилирования
+.prof
+
+# Файлы mypy
+.mypy_cache/
+
+# Файлы кэша
+*.pyc

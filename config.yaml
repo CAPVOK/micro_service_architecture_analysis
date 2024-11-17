@@ -1,0 +1,16 @@
+simulation:
+  num_requests: 1000  # Количество запросов в симуляции
+
+services:
+  service_t:
+    is_down: False        # Флаг недоступности службы T
+    failure_rate: 0.0     # Вероятность отказа службы T (от 0 до 1)
+    response_time: 0.0    # Время отклика службы T в секундах
+
+  service_s:
+    is_overloaded: False  # Флаг перегрузки службы S
+    failure_rate: 0.0     # Вероятность отказа службы S (от 0 до 1)
+    response_time: 0.0    # Время отклика службы S в секундах
+
+  service_p:
+    expect_404: False     # Ожидает ли служба P ответ 404 (False - падает при 404)
