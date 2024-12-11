@@ -1,16 +1,23 @@
 import random
-import time
 
 
 class ServiceT:
-    def __init__(self, is_down=False, failure_rate=0.0, response_time=0.0):
-        self.is_down = is_down
-        self.failure_rate = failure_rate
-        self.response_time = response_time
-        self.data = {i: f"Data from T for user {i}" for i in range(1000)}
+    def __init__(self, env, read_failure_probability, write_failure_probability):
+        self.env = env
+        self.read_failure_probability = read_failure_probability
+        self.write_failure_probability = write_failure_probability
+        self.storage = {}
 
-    def get_data(self, user_id):
-        time.sleep(self.response_time)  # Добавляем задержку
-        if self.is_down or random.random() < self.failure_rate:
-            raise Exception("Service T is down")
-        return self.data.get(user_id, None)
+    def read(self, req_id):
+        # Операция мгновенная, но есть вероятность отказа
+        if random.random() < self.read_failure_probability:
+            raise RuntimeError("T failed")
+        if req_id not in self.storage:
+            raise RuntimeError("T: data not found")
+        return self.storage[req_id]
+
+    def write(self, req_id, data):
+        # Аналогично, мгновенно, но с вероятностью отказа
+        if random.random() < self.write_failure_probability:
+            raise RuntimeError("T failed")
+        self.storage[req_id] = data

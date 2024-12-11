@@ -1,16 +1,18 @@
-simulation:
-  num_requests: 1000  # Количество запросов в симуляции
+P:
+  request_rate: 5  # число запросов в единицу времени (поток заявок)
+  simulation_time: 100  # общее время симуляции
+  read_probability: 0.5  # вероятность, что запрос будет на чтение
 
-services:
-  service_t:
-    is_down: False        # Флаг недоступности службы T
-    failure_rate: 0.0     # Вероятность отказа службы T (от 0 до 1)
-    response_time: 0.0    # Время отклика службы T в секундах
+Q:
+  response_timeout: 100.0 # максимальное время ожидания ответа от нижестоящих сервисов
 
-  service_s:
-    is_overloaded: False  # Флаг перегрузки службы S
-    failure_rate: 0.0     # Вероятность отказа службы S (от 0 до 1)
-    response_time: 0.0    # Время отклика службы S в секундах
+T:
+  read_failure_probability: 0 # вероятность отказа сервиса при чтении
+  write_failure_probability: 0 # вероятность отказа сервиса при записи
 
-  service_p:
-    expect_404: False     # Ожидает ли служба P ответ 404 (False - падает при 404)
+S:
+  read_failure_probability: 0 # вероятность отказа сервиса при чтении
+  write_failure_probability: 0 # вероятность отказа сервиса при записи
+  max_write_time: 1.0 # максимальное время записи
+  max_read_time: 0.5 # максимальное время чтения
+  concurrency_limit: 3 # максимальное количество одновременно выполняемых операций
