@@ -1,7 +1,8 @@
 P:
-  request_rate: 5  # число запросов в единицу времени (поток заявок)
-  simulation_time: 100  # общее время симуляции
+  arrival_process: fixed_interval   # "poisson" или "fixed_interval"
+  mean_interarrival: 0.2     # для "poisson" поток с интенсивностью ~5 req/ед.времени
   read_probability: 0.5  # вероятность, что запрос будет на чтение
+  num_requests: 50           # всего обработать 50 запросов
 
 Q:
   response_timeout: 100.0 # максимальное время ожидания ответа от нижестоящих сервисов

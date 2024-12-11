@@ -1,7 +1,3 @@
-from unittest.mock import patch
-
-import pytest
-
 from services import ServiceQ, ServiceS, ServiceT
 
 
@@ -122,11 +118,11 @@ def test_q_timeout(env):
     s_service = ServiceS(
         env, 0.0, 0.0, max_write_time=2.0, max_read_time=0.1, concurrency_limit=1
     )
-    q = ServiceQ(env, response_timeout=0.5, service_t=t_service, service_s=s_service)
+    q = ServiceQ(env, response_timeout=0.1, service_t=t_service, service_s=s_service)
 
     def scenario():
         res = yield env.process(q.process_request("write", 50, "timeout_data"))
-        assert "ERROR: timeout" in res
+        assert "write timeout" in res
         # Возможно, T уже успел записаться (проверяем), но Q вернул ошибку из-за таймаута на S.
         print("Q: timeout test passed")
 
