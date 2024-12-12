@@ -19,39 +19,48 @@ tab_config, tab_scenarios = st.tabs(["Конфигурация", "Сценари
 with tab_config:
     st.header("Настройка параметров")
 
-    # Добавим пояснения к параметрам с помощью `help`
+    # Параметры P
     st.subheader("Параметры P (генерация запросов)")
     arrival_process = st.selectbox(
-        "Тип процесса поступления запросов: 'poisson' - случайные интервалы, 'fixed_interval' - равные интервалы.",
+        "Тип процесса поступления запросов ('poisson' - случайные интервалы, 'fixed_interval' - равные интервалы):",
         ["poisson", "fixed_interval"],
         index=0,
     )
     mean_interarrival = st.slider(
-        "Средний интервал между запросами. При 'fixed_interval' это постоянный интервал, при 'poisson' - среднее для экспоненциального распределения.",
+        "Средний интервал между запросами. При 'fixed_interval' - постоянный, при 'poisson' - среднее для экспоненциального распределения.",
         0.05,
         1.0,
         0.2,
         0.05,
     )
     read_probability = st.slider(
-        "Вероятность, что сгенерированный запрос будет чтением (read), иначе будет запись (write).",
+        "Вероятность, что запрос будет чтением (read), иначе запись (write).",
         0.0,
         1.0,
         0.5,
         0.1,
     )
     num_requests = st.number_input(
-        "Общее количество запросов, которые P сгенерирует.",
+        "Общее количество запросов на одного пользователя.",
         min_value=10,
         max_value=1000000,
         value=50,
         step=10,
     )
 
+    # Новый параметр: количество пользователей
+    num_users = st.number_input(
+        "Количество пользователей (экземпляров P), генерирующих запросы одновременно.",
+        min_value=1,
+        max_value=1000,
+        value=1,
+        step=1,
+    )
+
     # Параметры Q
     st.subheader("Параметры Q (промежуточный сервис)")
     response_timeout = st.number_input(
-        "Максимальное время ожидания ответа от сервисов T и S в Q. Если превышено - таймаут и ошибка.",
+        "Максимальное время ожидания ответа (timeout).",
         min_value=0.1,
         max_value=10.0,
         value=1.0,
@@ -60,55 +69,19 @@ with tab_config:
 
     # Параметры T
     st.subheader("Параметры T (кеш)")
-    t_read_failure = st.slider(
-        "Вероятность отказа T при операции чтения.",
-        0.0,
-        1.0,
-        0.0,
-        0.05,
-    )
-    t_write_failure = st.slider(
-        "Вероятность отказа T при операции записи.",
-        0.0,
-        1.0,
-        0.0,
-        0.05,
-    )
+    t_read_failure = st.slider("Вероятность отказа T при чтении.", 0.0, 1.0, 0.0, 0.05)
+    t_write_failure = st.slider("Вероятность отказа T при записи.", 0.0, 1.0, 0.0, 0.05)
 
     # Параметры S
     st.subheader("Параметры S (постоянное хранилище)")
-    s_read_failure = st.slider(
-        "Вероятность отказа S при чтении.",
-        0.0,
-        1.0,
-        0.0,
-        0.05,
-    )
-    s_write_failure = st.slider(
-        "Вероятность отказа S при записи.",
-        0.0,
-        1.0,
-        0.0,
-        0.05,
-    )
-    s_max_write_time = st.slider(
-        "Максимальное время выполнения операции записи в S.",
-        0.0,
-        5.0,
-        0.1,
-        0.1,
-    )
-    s_max_read_time = st.slider(
-        "Максимальное время выполнения операции чтения из S.",
-        0.0,
-        5.0,
-        0.1,
-        0.1,
-    )
+    s_read_failure = st.slider("Вероятность отказа S при чтении.", 0.0, 1.0, 0.0, 0.05)
+    s_write_failure = st.slider("Вероятность отказа S при записи.", 0.0, 1.0, 0.0, 0.05)
+    s_max_write_time = st.slider("Макс. время записи в S.", 0.0, 5.0, 0.1, 0.1)
+    s_max_read_time = st.slider("Макс. время чтения из S.", 0.0, 5.0, 0.1, 0.1)
     s_concurrency = st.number_input(
-        "Максимальное количество параллельных операций в S.",
+        "Максимальное число параллельных операций в S.",
         min_value=1,
-        max_value=100000,
+        max_value=100,
         value=2,
         step=1,
     )
@@ -119,6 +92,7 @@ with tab_config:
         config["P"]["mean_interarrival"] = mean_interarrival
         config["P"]["read_probability"] = read_probability
         config["P"]["num_requests"] = num_requests
+        config["P"]["num_users"] = num_users  # Передаем количество пользователей
 
         config["Q"]["response_timeout"] = response_timeout
 
@@ -138,28 +112,23 @@ with tab_config:
         st.write(f"- Ошибок: {summary['errors']}")
         st.write(f"- Среднее время ответа: {summary['avg_time']:.4f}")
 
-        # Новые графики, предполагая, что summary["details"] = [(req_type, req_id, result, start_time, end_time, duration), ...]
         details = summary.get("details", [])
         if details:
-            # Пример: Кол-во ошибок по времени
-            # Для этого сгруппируем запросы по интервалам времени и посчитаем кумулятивно ошибки
-            # Предположим, у нас есть start_time. Если нет, нужно добавить в run_simulation.
+            # Сортируем по start_time
+            # Формат details: (req_type, req_id, result, start_time, end_time, duration)
+            sorted_details = sorted(details, key=lambda x: x[3])
+
+            time_points = []
             errors_over_time = []
             successes_over_time = []
-            sorted_details = sorted(
-                details, key=lambda x: x[3]
-            )  # сортируем по start_time (x[3])
-
             cumulative_errors = 0
             cumulative_success = 0
-            time_points = []
 
             for d in sorted_details:
                 req_type, req_id, result, start_time, end_time, duration = d
                 if "ERROR" in result:
                     cumulative_errors += 1
                 else:
-                    # Успешный запрос: либо "OK" (для записи) либо "data..." (для чтения)
                     cumulative_success += 1
                 time_points.append(end_time)
                 errors_over_time.append(cumulative_errors)
@@ -173,8 +142,7 @@ with tab_config:
             ax5.set_ylabel("Число ошибок (накопленное)")
             st.pyplot(fig5)
 
-            # Еще один график: Распределение типов запросов
-            # Посчитаем, сколько было read и write
+            # Соотношение операций read и write
             read_count = sum(1 for d in details if d[0] == "read")
             write_count = sum(1 for d in details if d[0] == "write")
 
@@ -185,7 +153,7 @@ with tab_config:
             ax6.set_title("Соотношение операций read и write")
             st.pyplot(fig6)
 
-            # Еще один график: Распределение успехов и ошибок по типам запросов (столбчатая диаграмма)
+            # Распределение успехов и ошибок по типам запросов
             read_success = sum(
                 1 for d in details if d[0] == "read" and not d[2].startswith("ERROR")
             )
@@ -237,9 +205,9 @@ with tab_scenarios:
     if "scenarios" not in st.session_state or not st.session_state["scenarios"]:
         st.write("Нет сохраненных сценариев. Запустите симуляцию и сохраните сценарий.")
     else:
-        # Выведем таблицу с результатами сценариев
         scenarios_list = st.session_state["scenarios"]
         st.write("Сохраненные сценарии:")
+
         for i, sc in enumerate(scenarios_list):
             st.write(
                 f"Сценарий {i+1}: mean_interarrival={sc['config']['mean_interarrival']}, "
@@ -261,7 +229,6 @@ with tab_scenarios:
         ax3.set_ylabel("Ошибки")
         st.pyplot(fig3)
 
-        # График зависимости среднего времени ответа от mean_interarrival
         fig4, ax4 = plt.subplots(figsize=(6, 4))
         ax4.plot(x, avg_times, marker="o", color="purple")
         ax4.set_title("Зависимость среднего времени ответа от mean_interarrival")

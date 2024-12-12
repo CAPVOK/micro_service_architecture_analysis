@@ -9,7 +9,6 @@ from services import ServiceP, ServiceQ, ServiceS, ServiceT
 def run_simulation(config):
     env = simpy.Environment()
 
-    # Инициализируем сервисы на основе конфигурации
     t_service = ServiceT(
         env,
         read_failure_probability=config["T"]["read_failure_probability"],
@@ -32,36 +31,34 @@ def run_simulation(config):
         service_s=s_service,
     )
 
-    p_service = ServiceP(
-        env,
-        q_service=q_service,
-        arrival_process=config["P"]["arrival_process"],
-        mean_interarrival=config["P"]["mean_interarrival"],
-        read_probability=config["P"]["read_probability"],
-        num_requests=config["P"]["num_requests"],
-    )
+    # Читаем количество пользователей (экземпляров P), если нет — по умолчанию 1
+    num_users = config["P"].get("num_users", 1)
+
+    p_services = []
+    for i in range(num_users):
+        p = ServiceP(
+            env,
+            q_service=q_service,
+            arrival_process=config["P"]["arrival_process"],
+            mean_interarrival=config["P"]["mean_interarrival"],
+            read_probability=config["P"]["read_probability"],
+            num_requests=config["P"]["num_requests"],
+        )
+        p_services.append(p)
 
     # Запускаем симуляцию
     env.run()
 
-    # После завершения собираем результаты
-    results = (
-        p_service.results
-    )  # предполагается, что P хранит список (req_type, req_id, result)
-    # Подсчёт успешных/неуспешных запросов и среднего времени
-    # Предположим, что для времени ответа у нас есть start_time/end_time внутри P или Q,
-    # либо мы можем модифицировать P, чтобы он хранил (req_type, req_id, result, time).
+    # Объединяем результаты всех P
+    all_results = []
+    for p in p_services:
+        all_results.extend(p.results)
 
-    # Если в p_service.results только (req_type, req_id, result), добавим время в P
-    # Например, пусть P хранит (req_type, req_id, result, duration):
-    # Если этого нет, доработайте P для записи времени (start_time/end_time) запроса.
-
-    # Предположим, что теперь p_service.results = [(req_type, req_id, result, duration), ...]
     successes = sum(
-        1 for r in results if r[2] == "OK" or (r[0] == "read" and "data" in r[2])
+        1 for r in all_results if r[2] == "OK" or (r[0] == "read" and "data" in r[2])
     )
-    errors = len(results) - successes
-    times = [r[5] for r in results]  # duration из четвертого элемента кортежа
+    errors = len(all_results) - successes
+    times = [r[5] for r in all_results]  # duration в 6-м элементе кортежа (индекс 5)
     avg_time = statistics.mean(times) if times else 0.0
 
     summary = {
@@ -69,7 +66,7 @@ def run_simulation(config):
         "errors": errors,
         "avg_time": avg_time,
         "times": times,
-        "details": results,
+        "details": all_results,
     }
 
     return summary
